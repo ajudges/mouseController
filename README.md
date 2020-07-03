@@ -35,7 +35,11 @@ Other optional arguments include: -l, "path for MKLDNN (CPU)-targeted custom lay
 On running the program, two visualizations pop-up to provide visuals on what the models are seeing. 
 
 ## Benchmarks
+![Alt text](https://github.com/ajudges/mouseController/blob/master/bin/Inference%20Time.png)
 
+![Alt text](https://github.com/ajudges/mouseController/blob/master/bin/FPS.png)
+
+![Alt text](https://github.com/ajudges/mouseController/blob/master/bin/Model%20load%20time.png)
 
 ## Results
 
