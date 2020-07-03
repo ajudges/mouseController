@@ -12,10 +12,14 @@ from mouse_controller import MouseController
 from facial_landmarks_detection import FacialLandmarksDetection
 from head_pose_estimation import HeadPoseEstimation
 from face_detection import FaceDetection
+import time
+import os
+
+logging.basicConfig(filename='mouseController.log', level=logging.DEBUG)
 
 
 CPU_EXTENSION="/opt/intel/openvino/deployment_tools/inference_engine/lib/intel64/libcpu_extension_sse4.so"
-
+performance_directory_path="../"
 def get_args():
     '''
     Gets the arguments from the command line.
@@ -33,6 +37,8 @@ def get_args():
     optional.add_argument("-l", help="MKLDNN (CPU)-targeted custom layers.", default=CPU_EXTENSION, required=False)
     optional.add_argument("-d", help="Specify the target device type", default='CPU')
     required.add_argument("-i", help="path to video/image file or 'cam' for webcam", required=True)
+    optional.add_argument("-p", help="models precision e.g. FP16, FP32, INT8", required=False, default='FP16')
+    optional.add_argument("-pd", help="path to store performance stats", required=False, default=performance_directory_path)
 
     args = parser.parse_args()
 
@@ -40,7 +46,7 @@ def get_args():
 
 def pipelines(args):
     # enable logging for the function
-    logger = logging.getLogger('pipelines')
+    logger = logging.getLogger(__name__)
     
     # grab the parsed parameters
     faceDetectionModel=args.m_f
@@ -64,48 +70,112 @@ def pipelines(args):
     feed.load_data()
 
     # initialize and load the models
+    start_face_model_load_time = time.time()
     faceDetectionPipeline=FaceDetection(faceDetectionModel, device, customLayers)
     faceDetectionPipeline.load_model()
+    face_model_load_time = time.time() - start_face_model_load_time
 
+    start_landmark_model_load_time = time.time()
     landmarksDetectionPipeline=FacialLandmarksDetection(landmarksDetectionModel, device, customLayers)
     landmarksDetectionPipeline.load_model()
+    landmark_model_load_time = time.time() - start_landmark_model_load_time
     
+    start_headpose_model_load_time = time.time()
     headPoseEstimationPipeline=HeadPoseEstimation(headPoseEstimationModel, device, customLayers)
     headPoseEstimationPipeline.load_model()
+    headpose_model_load_time = time.time() - start_headpose_model_load_time
     
+    start_gaze_model_load_time = time.time()
     gazeDetectionPipeline=Gaze(gazeDetectionModel, device, customLayers)
     gazeDetectionPipeline.load_model()
-
-    # break key
-    key = cv2.waitKey(60)
+    gaze_model_load_time = time.time() - start_gaze_model_load_time
+    
+    
     # count the number of frames
     frameCount = 0
 
     # collate frames from the feeder and feed into the detection pipelines
     for _, frame in feed.next_batch():
+
         if not _:
             break
         frameCount+=1
-        if frameCount==10:
-            print("Completed")
-        croppedFace=faceDetectionPipeline.predict(frame.copy())
+        if frameCount%5==0:
+            cv2.imshow('video', cv2.resize(frame,(500,500)))
+
+        key = cv2.waitKey(60)
+        start_face_inference_time = time.time()
+        croppedFace = faceDetectionPipeline.predict(frame)
+        face_inference_time = time.time() - start_face_inference_time
+
         if type(croppedFace)==int:
             logger.info("no face detected")
             if key==27:
                 break
             continue
-        left_eye_image,right_eye_image=landmarksDetectionPipeline.predict(croppedFace.copy())
-        head_pose_angles=headPoseEstimationPipeline.predict(croppedFace.copy())
-        if left_eye_image.any()!=None and right_eye_image.any()!=None:
-            coord=gazeDetectionPipeline.predict(left_eye_image ,right_eye_image, head_pose_angles)
-        else:
-            exit(1)
         
-        mouseVector=MouseController('high','fast')
-        mouseVector.move(coord[0],coord[1])
+        start_landmark_inference_time = time.time()
+        left_eye_image,right_eye_image, landmarkedFace = landmarksDetectionPipeline.predict(croppedFace.copy())
+        landmark_inference_time = time.time() - start_landmark_inference_time
+
+        if left_eye_image.any() == None or right_eye_image.any() == None:
+            logger.info("image probably too dark or eyes covered, hence could not detect landmarks")
+            continue
+        
+        cv2.imshow('Face output', landmarkedFace)
+
+        start_headpose_inference_time = time.time()
+        head_pose_angles=headPoseEstimationPipeline.predict(croppedFace.copy())
+        
+        headpose_inference_time = time.time() - start_headpose_inference_time
+        
+        start_gaze_inference_time = time.time()
+        x,y=gazeDetectionPipeline.predict(left_eye_image ,right_eye_image, head_pose_angles)
+        gaze_inference_time = time.time() - start_gaze_inference_time
+
+        mouseVector=MouseController('medium','fast')
+
+
+        if frameCount%5==0:
+            mouseVector.move(x,y)
 
         if key==27:
             break
+        
+        output_path = performance_directory_path+args.p
+        if not os.path.exists(output_path):
+            os.makedirs(output_path)
+        if face_inference_time != 0 and landmark_inference_time != 0 and headpose_inference_time != 0 and gaze_inference_time != 0:
+
+            fps_face = 1/face_inference_time
+            fps_landmark = 1/landmark_inference_time
+            fps_headpose = 1/headpose_inference_time
+            fps_gaze = 1/gaze_inference_time
+
+            with open(os.path.join(output_path, 'face_stats.txt'), 'w') as f:
+                f.write(str(face_inference_time)+'\n')
+                f.write(str(fps_face)+'\n')
+                f.write(str(face_model_load_time)+'\n')
+            
+            with open(os.path.join(output_path, 'landmark_stats.txt'), 'w') as f:
+                f.write(str(landmark_inference_time)+'\n')
+                f.write(str(fps_landmark)+'\n')
+                f.write(str(landmark_model_load_time)+'\n')
+
+            with open(os.path.join(output_path, 'headpose_stats.txt'), 'w') as f:
+                f.write(str(headpose_inference_time)+'\n')
+                f.write(str(fps_headpose)+'\n')
+                f.write(str(headpose_model_load_time)+'\n')
+
+            with open(os.path.join(output_path, 'gaze_stats.txt'), 'w') as f:
+                f.write(str(gaze_inference_time)+'\n')
+                f.write(str(fps_gaze)+'\n')
+                f.write(str(gaze_model_load_time)+'\n')
+
+
+        
+
+        
         
     logger.info("The End")
     cv2.destroyAllWindows()

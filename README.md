@@ -1,27 +1,53 @@
 # Computer Pointer Controller
 
-*TODO:* Write a short introduction to your project
+Short introduction to the project
+This project - Computer Pointer Controller - moves the mouse pointer to the direction of the eye gaze. It does this by using a combination of 4 different computer vision models -face detection model, landmark detection model, head-pose estimation model, and gaze estimation. The final output, which is the x and y coordinates of the eye gaze, from the combined models is then fed to a mouse controller which moves the mouse pointer to the given coordinates.
 
 ## Project Set Up and Installation
 *TODO:* Explain the setup procedures to run your project. For instance, this can include your project directory structure, the models you need to download and where to place them etc. Also include details about how to install the dependencies your project requires.
 
+1. Install OpenVINO (You can run this [script](https://github.com/Tob-iee/OpenVINO_installation) to automate the installation of OpenVINO)
+
+2. Clone/download this repo.
+
+3. Use the requirements.txt file to install the required packages, i.e.
+```
+pip3 install requirements.txt
+```
+
 ## Demo
-*TODO:* Explain how to run a basic demo of your model.
+
+From terminal, navigate to the src folder on the cloned directory, and run
+```
+python3 main.py -i ../bin/demo.mp4
+```
 
 ## Documentation
-*TODO:* Include any documentation that users might need to better understand your project code. For instance, this is a good place to explain the command line arguments that your project supports.
+
+The project contains FP32 intermediate representation (IR) files of the following models face detection model, landmark regression model, head-pose estimation model, and gaze estimation model. The models can be found in the models folder and their file paths are already specified in the code. 
+
+The only required command line argument is -i, which can either be the path of the input video or CAM for camera. 
+
+The optional arguments for the models include: -m_f, "path to face detection model"; -m_l, "path to landmark detection model"; -m_h, "path to head-pose estimation model"; -m_g, "path to gaze estimation model." 
+
+Other optional arguments include: -l, "path for MKLDNN (CPU)-targeted custom layers; -d, "target device type e.g. CPU, FPGA"; -p, this is useful for specifying the precision of the models e.g. INT8, FP16, FP32, if changed from the default FP32; -pd, path to store performance statistics e.g. model loading time. 
+
+On running the program, two visualizations pop-up to provide visuals on what the models are seeing. 
 
 ## Benchmarks
-*TODO:* Include the benchmark results of running your model on multiple hardwares and multiple model precisions. Your benchmarks can include: model loading time, input/output processing time, model inference time etc.
+
 
 ## Results
-*TODO:* Discuss the benchmark results and explain why you are getting the results you are getting. For instance, explain why there is difference in inference time for FP32, FP16 and INT8 models.
 
-## Stand Out Suggestions
-This is where you can provide information about the stand out suggestions that you have attempted.
+Of the four models, the face detection model has the most latency across the precision types. Hence, the combined inferencing speed of the four models is mostly dependent on that of the face detection model. 
 
-### Async Inference
-If you have used Async Inference in your code, benchmark the results and explain its effects on power and performance of your project.
+It can also be seen that there is a general decrease in the processed frames per second with increase in precision. This can be attributed to the increase in floating point numbers with increase in precision, hence the calculations become more computational intensive.
+
+FP32 precision gives better accuracy than the rest, the increased accuracy is more noticeable in the output for the gaze estimation. This could be as a result of the gaze estimation model being the last model before the final output to the mouse controller, hence, the losses of lower precisions are being built up from the first model down to the gaze estimation model.
 
 ### Edge Cases
+
+Certain situations make the inferencing to fail. If the lighting conditions are poor, the application may not be able to detect the face, and should incase it detects the face and can't pick out the left and right eyes, a message is logged that the image is too dark or eyes are covered, hence it can't pick out the features.
+
+Also, if there are multiple people in the frame, it takes the first detected face and uses it in the inferencing flow.
 There will be certain situations that will break your inference flow. For instance, lighting changes or multiple people in the frame. Explain some of the edge cases you encountered in your project and how you solved them to make your project more robust.

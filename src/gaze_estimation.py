@@ -6,6 +6,8 @@ import numpy as np
 from openvino.inference_engine import IENetwork, IECore
 import cv2
 import sys
+import math
+import logging
 
 CPU_EXTENSION = "/opt/intel/openvino/deployment_tools/inference_engine/lib/intel64/libcpu_extension_sse4.so"
 
@@ -21,12 +23,12 @@ class Gaze:
         model_structure = model_name+'.xml'
         self.device=device
         self.cpu_extension=extensions
+        self.logger=logging.getLogger(__name__)
 
         try:
             self.model=IENetwork(model_structure,model_weight)
         except Exception as e:
-            raise ValueError("Error loading model. Check model path")
-        
+            self.logger.exception("Error loading model. Check model path")
 
     def load_model(self):
         '''
@@ -44,7 +46,7 @@ class Gaze:
             if self.cpu_extension and "CPU" in self.device:
                 self.core.add_extension(self.cpu_extension, self.device)
             else:
-                print("Add CPU extension and device type or run layer with original framework")
+                self.logger.debug("Add CPU extension and device type or run layer with original framework")
                 exit(1)
 
         self.net=self.core.load_network(network=self.model,device_name=self.device,num_requests=1)
@@ -53,7 +55,6 @@ class Gaze:
         self.input_shape=self.model.inputs[self.input_name[1]].shape
         #self.input_name=next(iter(self.model.inputs))
         #self.input_shape=self.model.inputs[self.input_name].shape
-        print("input shape is %s" %self.input_shape)
         self.output_name=next(iter(self.model.outputs))
         self.output_shape=self.model.outputs[self.output_name].shape
         
@@ -64,25 +65,19 @@ class Gaze:
         TODO: You will need to complete this method.
         This method is meant for running predictions on the input image.
         '''
-        print('preprocess input')
-
+        self.logger.info("preprocess input")
         left_eye_image = self.preprocess_input(leftEye)
         right_eye_image = self.preprocess_input(rightEye)
         # start asynchronous inference for specified request
-        print('Start async inference')
-        print('this is the shape of headpose', headPose)
-        self.net.start_async(request_id=0, inputs={'left_eye_image': left_eye_image, 'right_eye_image': right_eye_image, 'head_pose_angles':headPose})
+        self.logger.info("start sync request")
+        self.net.infer({'head_pose_angles':headPose, 'left_eye_image': left_eye_image, 'right_eye_image': right_eye_image})
         
         # wait for the result
         if self.net.requests[0].wait(-1) == 0:
-            # get the output of the inference
-            print('Waiting for output of inference')
+            
             outputs=self.net.requests[0].outputs[self.output_name]
             
-            return self.preprocess_output(outputs)
-
-    def check_model(self):
-        raise NotImplementedError
+            return self.preprocess_output(outputs,headPose)
 
     def preprocess_input(self, image):
         '''
@@ -96,14 +91,11 @@ class Gaze:
 
         return image
 
-    def preprocess_output(self, outputs):
+    def preprocess_output(self, outputs, headPose):
         '''
         Before feeding the output of this model to the next model,
         you might have to preprocess the output. This function is where you can do that.
         '''
-        print(outputs)
-        coord=[]   
-        coord.append(outputs[0][0])
-        coord.append(outputs[0][1])
-        print(coord)
-        return coord
+        x = outputs[0][0]
+        y = outputs[0][1]
+        return x,y

@@ -7,6 +7,7 @@ import numpy as np
 from openvino.inference_engine import IENetwork, IECore
 import cv2
 import sys
+import logging
 
 CPU_EXTENSION = "/opt/intel/openvino/deployment_tools/inference_engine/lib/intel64/libcpu_extension_sse4.so"
 
@@ -22,14 +23,13 @@ class HeadPoseEstimation:
         model_structure=model_name+'.xml'
         self.device=device
         self.cpu_extension=extensions
+        self.logger=logging.getLogger(__name__)
     
         try:
             self.model=IENetwork(model_structure,model_weight)
         except Exception as e:
-            raise ValueError("Failed to load model. Kindly put the correct path")
+            self.logger.exception("Failed to load model. Kindly put the correct path")
         
-
-
     def load_model(self):
         '''
         TODO: You will need to complete this method.
@@ -46,7 +46,7 @@ class HeadPoseEstimation:
             if self.cpu_extension and "CPU" in self.device:
                 self.core.add_extension(self.cpu_extension, self.device)
             else:
-                print("Add CPU extension and device type or run layer with original framework")
+                self.logger.info("Add CPU extension and device type or run layer with original framework")
                 exit(1)
 
         self.net=self.core.load_network(network=self.model,device_name=self.device,num_requests=1)
@@ -64,21 +64,18 @@ class HeadPoseEstimation:
         TODO: You will need to complete this method.
         This method is meant for running predictions on the input image.
         '''
-        print('preprocess input')
+        self.logger.info("preprocess input and start inference")
         
         p_image = self.preprocess_input(image)
-        # start asynchronous inference for specified request
-        print('Start async inference')
-        self.net.infer({self.input_name: p_image})
-        
+        # sync inference
+        self.logger.info("infer result")
+        outputs=self.net.infer({self.input_name: p_image})
+        self.logger.info("infered result")
         # wait for the result
+        
         if self.net.requests[0].wait(-1) == 0:
             # get the output of the inference
-            print('Waiting for output of inference')
             outputs=self.net.requests[0].outputs
-
-            # select coords based on confidence threshold
-            print('Obtain coords of the conf threshold')
             
             return self.preprocess_output(outputs)
 
@@ -98,10 +95,11 @@ class HeadPoseEstimation:
         Before feeding the output of this model to the next model,
         you might have to preprocess the output. This function is where you can do that.
         '''
+        self.logger.info(" Getting the yaw, pitch, and roll angles ")
         angles = []
-        print(outputs)
+        
         angles.append(outputs['angle_y_fc'][0][0])
         angles.append(outputs['angle_p_fc'][0][0])
         angles.append(outputs['angle_r_fc'][0][0])
-        print('hey, here are the angles, dey sharp',angles)
+        
         return angles

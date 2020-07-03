@@ -6,6 +6,7 @@ import numpy as np
 from openvino.inference_engine import IENetwork, IECore
 import cv2
 import sys
+import logging
 
 CPU_EXTENSION = "/opt/intel/openvino/deployment_tools/inference_engine/lib/intel64/libcpu_extension_sse4.so"
 
@@ -21,12 +22,12 @@ class FacialLandmarksDetection:
         self.model_structure=model_name+'.xml'
         self.device=device
         self.cpu_extension=extensions
+        self.logger = logging.getLogger(__name__)
 
         try:
             self.model=IENetwork(self.model_structure,self.model_weights)
         except Exception as e:
-            raise ValueError("Could not initialize the network. Have you entered the correct model path?")
-        
+            self.logger.exception("Could not initialize the network. Have you entered the correct model path?")
 
     def load_model(self):
         '''
@@ -44,7 +45,7 @@ class FacialLandmarksDetection:
             if self.cpu_extension and "CPU" in self.device:
                 self.core.add_extension(self.cpu_extension, self.device)
             else:
-                print("Add CPU extension and device type or run layer with original framework")
+                self.logger.debug("Add CPU extension and device type or run layer with original framework")
                 exit(1)
 
         self.net=self.core.load_network(network=self.model,device_name=self.device,num_requests=1)
@@ -61,30 +62,25 @@ class FacialLandmarksDetection:
         TODO: You will need to complete this method.
         This method is meant for running predictions on the input image.
         '''
-        print('preprocess input')
+        self.logger.info("preprocess input and perform inference ")
         
         p_image = self.preprocess_input(image)
-        # start asynchronous inference for specified request
-        print('Start async inference')
+        # synchronous inference
         self.net.infer({self.input_name: p_image})
         
         # wait for the result
         if self.net.requests[0].wait(-1) == 0:
             # get the output of the inference
-            print('Waiting for output of inference')
             outputs=self.net.requests[0].outputs[self.output_name]
 
             # select coords based on confidence threshold
-            print('Obtain coords of the conf threshold')
+            self.logger.info("Obtain coords of the left and right eyes")
             coords = self.preprocess_output(outputs)
-            
-            print('left_eye and right_eye')
-
+            self.logger.info("Return coords and the cropped Face")
             return self.denorm_output(coords,image)
 
-
+    # function to denormalize the output of the inference
     def denorm_output(self, coords,image):
-        print("following coords are", coords)
         height = image.shape[0]
         width = image.shape[1]
         
@@ -96,9 +92,17 @@ class FacialLandmarksDetection:
         r_x1 = int(coords[2]*width) + 10
         r_y0 = int(coords[3]*height) - 10
         r_y1 = int(coords[3]*height) + 10
+        
+        
         l_eye = image[l_y0:l_y1,l_x0:l_x1]
         r_eye = image[r_y0:r_y1,r_x0:r_x1]
-        return l_eye,r_eye
+
+        cv2.rectangle(image, (l_x0, l_y0), (l_x1, l_y1), (0, 0, 255), 2)
+        cv2.rectangle(image, (r_x0, r_y0), (r_x1, r_y1), (0, 0, 255), 2)
+
+        #cv2.imwrite("FacialLandmark.jpg", image)
+
+        return l_eye,r_eye, image
 
     def preprocess_input(self, image):
         '''
@@ -118,7 +122,7 @@ class FacialLandmarksDetection:
         '''
         # filter output based on confidence threshold
         outputs = outputs[0]
-        print("here are the coords for landmark", outputs)
+        self.logger.info("left and right eyes coordinates: {0}".format(outputs))
         xl=outputs[0][0]
         yl=outputs[1][0]
         xr=outputs[2][0]
