@@ -37,7 +37,7 @@ def get_args():
     optional.add_argument("-l", help="MKLDNN (CPU)-targeted custom layers.", default=CPU_EXTENSION, required=False)
     optional.add_argument("-d", help="Specify the target device type", default='CPU')
     required.add_argument("-i", help="path to video/image file or 'cam' for webcam", required=True)
-    optional.add_argument("-p", help="models precision e.g. FP16, FP32, INT8", required=False, default='FP16')
+    optional.add_argument("-p", help="models precision e.g. FP16, FP32, INT8", required=False, default='FP32')
     optional.add_argument("-pd", help="path to store performance stats", required=False, default=performance_directory_path)
 
     args = parser.parse_args()
