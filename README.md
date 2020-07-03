@@ -4,7 +4,6 @@ Short introduction to the project
 This project - Computer Pointer Controller - moves the mouse pointer to the direction of the eye gaze. It does this by using a combination of 4 different computer vision models -face detection model, landmark detection model, head-pose estimation model, and gaze estimation. The final output, which is the x and y coordinates of the eye gaze, from the combined models is then fed to a mouse controller which moves the mouse pointer to the given coordinates.
 
 ## Project Set Up and Installation
-*TODO:* Explain the setup procedures to run your project. For instance, this can include your project directory structure, the models you need to download and where to place them etc. Also include details about how to install the dependencies your project requires.
 
 1. Install OpenVINO (You can run this [script](https://github.com/Tob-iee/OpenVINO_installation) to automate the installation of OpenVINO)
 
@@ -35,7 +34,11 @@ Other optional arguments include: -l, "path for MKLDNN (CPU)-targeted custom lay
 On running the program, two visualizations pop-up to provide visuals on what the models are seeing. 
 
 ## Benchmarks
+![Alt text](https://github.com/ajudges/mouseController/blob/master/bin/Inference%20Time.png)
 
+![Alt text](https://github.com/ajudges/mouseController/blob/master/bin/FPS.png)
+
+![Alt text](https://github.com/ajudges/mouseController/blob/master/bin/Model%20load%20time.png)
 
 ## Results
 
