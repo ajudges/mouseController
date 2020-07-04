@@ -77,7 +77,7 @@ class HeadPoseEstimation:
             # get the output of the inference
             outputs=self.net.requests[0].outputs
             
-            return self.preprocess_output(outputs)
+            return self.preprocess_output(outputs, image)
 
     def preprocess_input(self, image):
         '''
@@ -90,7 +90,7 @@ class HeadPoseEstimation:
         image = image.reshape(1,*image.shape)
         return image
 
-    def preprocess_output(self, outputs):
+    def preprocess_output(self, outputs, image):
         '''
         Before feeding the output of this model to the next model,
         you might have to preprocess the output. This function is where you can do that.
@@ -102,4 +102,6 @@ class HeadPoseEstimation:
         angles.append(outputs['angle_p_fc'][0][0])
         angles.append(outputs['angle_r_fc'][0][0])
         
-        return angles
+        cv2.putText(image, "Estimated yaw:{:.2f} | Estimated pitch:{:.2f}".format(angles[0],angles[1]), (10,20), cv2.FONT_HERSHEY_COMPLEX, 0.25, (0,255,0),1)
+        cv2.putText(image, "Estimated roll:{:.2f}".format(angles[2]), (10,30), cv2.FONT_HERSHEY_COMPLEX, 0.25, (0,255,0),1)
+        return angles, image

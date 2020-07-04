@@ -77,7 +77,7 @@ class Gaze:
             
             outputs=self.net.requests[0].outputs[self.output_name]
             
-            return self.preprocess_output(outputs,headPose)
+            return self.preprocess_output(outputs)
 
     def preprocess_input(self, image):
         '''
@@ -91,11 +91,12 @@ class Gaze:
 
         return image
 
-    def preprocess_output(self, outputs, headPose):
+    def preprocess_output(self, outputs):
         '''
         Before feeding the output of this model to the next model,
         you might have to preprocess the output. This function is where you can do that.
         '''
         x = outputs[0][0]
         y = outputs[0][1]
+
         return x,y
