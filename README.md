@@ -15,6 +15,7 @@ pip3 install requirements.txt
 ```
 
 4. Use the OpenVINO model downloader to download the following models:
+
   a. Face detection model
   ```
   python /opt/intel/openvino/deployment_tools/tools/model_downloader/downloader.py --name "face-detection-adas-binary-0001"
