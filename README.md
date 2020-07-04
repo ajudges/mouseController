@@ -14,24 +14,65 @@ This project - Computer Pointer Controller - moves the mouse pointer to the dire
 pip3 install requirements.txt
 ```
 
+4. Use the OpenVINO model downloader to download the following models:
+  a. Face detection model
+  ```
+  python /opt/intel/openvino/deployment_tools/tools/model_downloader/downloader.py --name "face-detection-adas-binary-0001"
+  ```
+  
+  b. Landmark regression model
+  ```
+  python /opt/intel/openvino/deployment_tools/tools/model_downloader/downloader.py --name "landmarks-regression-retail-0009"
+  ```
+  
+  c. Head-pose estimation model
+  ```
+  python /opt/intel/openvino/deployment_tools/tools/model_downloader/downloader.py --name "head-pose-estimation-adas-0001"
+  ```
+  
+  d. Gaze estimation model
+  ```
+  python /opt/intel/openvino/deployment_tools/tools/model_downloader/downloader.py --name "gaze-estimation-adas-0002"
+  ```
+
+## Directory Structure 
+
+![Alt text](https://github.com/ajudges/mouseController/blob/master/bin/directorystructure.png)
+
 ## Demo
 
 From terminal, navigate to the src folder on the cloned directory, and run
 ```
-python3 main.py -i ../bin/demo.mp4
+python3 main.py -i ../bin/demo.mp4 \
+-m_f <path to face detection model xml file> \
+-m_l <path to landmark detection model xml file> \
+-m_h <path to head-pose estimation model xml file> \
+-m_g <path to gaze estimation model xml file>
 ```
 
 ## Documentation
 
-The project contains FP32 intermediate representation (IR) files of the following models face detection model, landmark regression model, head-pose estimation model, and gaze estimation model. The models can be found in the models folder and their file paths are already specified in the code. 
+The required command line arguments are:
 
-The only required command line argument is -i, which can either be the path of the input video or CAM for camera. 
+1. -i, which can either be the path of the input video or ``cam`` for camera
 
-The optional arguments for the models include: -m_f, "path to face detection model"; -m_l, "path to landmark detection model"; -m_h, "path to head-pose estimation model"; -m_g, "path to gaze estimation model." 
+2. -m_f, path to face detection model 
 
-Other optional arguments include: -l, "path for MKLDNN (CPU)-targeted custom layers; -d, "target device type e.g. CPU, FPGA"; -p, this is useful for specifying the precision of the models e.g. INT8, FP16, FP32, if changed from the default FP32; -pd, path to store performance statistics e.g. model loading time. 
+3. -m_l, path to landmark detection model
 
-On running the program, two visualizations pop-up to provide visuals on what the models are seeing. 
+4. -m_h, path to head-pose estimation model
+
+5. -m_g, path to gaze estimation model
+
+The optional command line arguments are:
+
+1. -l, path for MKLDNN (CPU)-targeted custom layers
+
+2. -d, target device type e.g. CPU, FPGA
+
+3. -p, path (in the cloned directory) to store performance statistics i.e. inference time, fps, and model loading time. 
+
+4. -vf, specify flags from m_f, m_l, m_h, m_g e.g. -vf m_f m_l m_h m_g (seperate each flag by space) for visualization of the output of intermediate models
 
 ## Benchmarks
 ![Alt text](https://github.com/ajudges/mouseController/blob/master/bin/Inference%20Time.png)
