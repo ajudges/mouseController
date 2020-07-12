@@ -4,7 +4,7 @@ This project - Computer Pointer Controller - moves the mouse pointer to the dire
 ![](https://youtu.be/YpIxPZf8WCQ)
 
 ## Demo video of the App running
-[![demo video](https://img.youtube.com/vi/YpIxPZf8WCQ/maxresdefault.jpg)](https://youtu.be/YpIxPZf8WCQ)
+[![demo video](https://img.youtube.com/vi/YpIxPZf8WCQ/0.jpg)](https://youtu.be/YpIxPZf8WCQ)
 
 
 ## Project Set Up and Installation
