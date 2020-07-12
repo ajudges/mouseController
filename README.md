@@ -3,6 +3,10 @@
 This project - Computer Pointer Controller - moves the mouse pointer to the direction of the eye gaze. It does this by using a combination of 4 different computer vision models -face detection model, landmark detection model, head-pose estimation model, and gaze estimation. The final output, which is the x and y coordinates of the eye gaze, from the combined models is then fed to a mouse controller which moves the mouse pointer to the given coordinates.
 ![](https://youtu.be/YpIxPZf8WCQ)
 
+## Demo video of the App running
+[![demo video](https://img.youtube.com/vi/YpIxPZf8WCQ/1.jpg)](https://youtu.be/YpIxPZf8WCQ)
+
+
 ## Project Set Up and Installation
 
 1. Install OpenVINO (You can run this [script](https://github.com/Tob-iee/OpenVINO_installation) to automate the installation of OpenVINO)
