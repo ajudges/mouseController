@@ -2,8 +2,8 @@
 Program to implement the various pipelines necessary for the pointer movement direction
 '''
 
-import cv2
 import numpy as np
+import cv2
 import argparse
 import logging
 from input_feeder import InputFeeder
@@ -30,7 +30,7 @@ def get_args():
     optional = parser.add_argument_group('optional arguments')
 
     # -- create the arguments
-    '''
+    
     optional.add_argument("-m_f", help="path to face detection model", default='../models/face-detection-adas-binary-0001', required=False)
     optional.add_argument("-m_l", help="path to facial landmarks detection model", default='../models/landmarks-regression-retail-0009', required=False)
     optional.add_argument("-m_h", help="path to head pose estimation detection model", default='../models/head-pose-estimation-adas-0001', required=False)
@@ -40,7 +40,7 @@ def get_args():
     required.add_argument("-m_l", help="path to facial landmarks detection model", required=True)
     required.add_argument("-m_h", help="path to head pose estimation detection model", required=True)
     required.add_argument("-m_g", help="path to gaze detection model", required=True)
-    
+    '''
     optional.add_argument("-l", help="MKLDNN (CPU)-targeted custom layers.", default=CPU_EXTENSION, required=False)
     optional.add_argument("-d", help="Specify the target device type", default='CPU')
     required.add_argument("-i", help="path to video/image file or 'cam' for webcam", required=True)
@@ -49,6 +49,12 @@ def get_args():
     args = parser.parse_args()
 
     return args
+
+def writePerformanceStats(args,model_stats_txt,model_inference_time,model_fps,model_load_time):
+    with open(os.path.join(performance_directory_path+args.p, model_stats_txt), 'w') as f:
+                f.write(str(model_inference_time)+'\n')
+                f.write(str(model_fps)+'\n')
+                f.write(str(model_load_time)+'\n')
 
 def pipelines(args):
     # enable logging for the function
@@ -94,7 +100,7 @@ def pipelines(args):
     
     start_gaze_model_load_time = time.time()
     gazeDetectionPipeline=Gaze(gazeDetectionModel, device, customLayers)
-    gazeDetectionPipeline.load_model()
+    gazeDetectionPipeline.load_model('Gaze')
     gaze_model_load_time = time.time() - start_gaze_model_load_time
     
     
@@ -169,29 +175,10 @@ def pipelines(args):
             fps_headpose = 1/headpose_inference_time
             fps_gaze = 1/gaze_inference_time
 
-            with open(os.path.join(output_path, 'face_stats.txt'), 'w') as f:
-                f.write(str(face_inference_time)+'\n')
-                f.write(str(fps_face)+'\n')
-                f.write(str(face_model_load_time)+'\n')
-            
-            with open(os.path.join(output_path, 'landmark_stats.txt'), 'w') as f:
-                f.write(str(landmark_inference_time)+'\n')
-                f.write(str(fps_landmark)+'\n')
-                f.write(str(landmark_model_load_time)+'\n')
-
-            with open(os.path.join(output_path, 'headpose_stats.txt'), 'w') as f:
-                f.write(str(headpose_inference_time)+'\n')
-                f.write(str(fps_headpose)+'\n')
-                f.write(str(headpose_model_load_time)+'\n')
-
-            with open(os.path.join(output_path, 'gaze_stats.txt'), 'w') as f:
-                f.write(str(gaze_inference_time)+'\n')
-                f.write(str(fps_gaze)+'\n')
-                f.write(str(gaze_model_load_time)+'\n')
-
-
-        
-
+            writePerformanceStats(args,'face_stats.txt',face_inference_time,fps_face,face_model_load_time)
+            writePerformanceStats(args,'landmark_stats.txt',landmark_inference_time,fps_landmark,landmark_model_load_time)
+            writePerformanceStats(args,'headpose_stats.txt',headpose_inference_time,fps_headpose,headpose_model_load_time)
+            writePerformanceStats(args,'gaze_stats.txt',gaze_inference_time,fps_gaze,gaze_model_load_time)
         
         
     logger.info("The End")
