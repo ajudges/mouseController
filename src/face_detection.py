@@ -22,7 +22,7 @@ class FaceDetection(Model_X):
         self.logger.info("preprocess input and start inference")
         
         p_image = self.preprocess_input(image)
-        # start asynchronous inference for specified request
+        # start synchronous inference for specified request
         self.net.infer({self.input_name: p_image})
         
         # wait for the result
